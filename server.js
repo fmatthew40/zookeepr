@@ -111,9 +111,9 @@ app.get('/api/animals', (req, res) => {
   }
   res.json(results);
 });
-// app.get('/api/animals', (req, res) => {
-//   res.json(animals);
-// });
+app.get('/api/animals', (req, res) => {
+  res.json(animals);
+});
 app.listen(PORT, () => {
   console.log(`API server now on port ${PORT}!`);
 })
