@@ -127,6 +127,26 @@
         "loving"
       ],
       "id": "12"
+    },
+    {
+      "name": "Barto",
+      "species": "Hungarian",
+      "diet": "folivore",
+      "personalityTraits": [
+        "hungry",
+        "zany",
+        "anxious"
+      ],
+      "id": "13"
+    },
+    {
+      "name": "Helen",
+      "species": "Hungarian",
+      "diet": "piscivore",
+      "personalityTraits": [
+        "zany"
+      ],
+      "id": "14"
     }
   ]
 }
