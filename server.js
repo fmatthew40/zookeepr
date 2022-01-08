@@ -10,6 +10,8 @@ const app = express();
 app.use(express.urlencoded({ extended: true }));
 // parse incoming JSON data - needs to be set up to accept POST Data
 app.use(express.json());
+app.use(express.static('public'));
+
 
 
 
@@ -117,6 +119,12 @@ app.post('/api/animals', (req, res) => {
     const animal = createNewAnimal(req.body, animals);
     res.json(animal);
   }
+});
+
+// ('/') - this is the root route of the server which is used to create a homepage for the server
+// below has one job - to send our user the html page
+app.get('/', (req, res) => {
+  res.sendFile(path.join(__dirname, './public/index.html'));
 });
 
 app.listen(PORT, () => {
