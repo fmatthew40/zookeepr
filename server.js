@@ -1,145 +1,102 @@
-
-const fs = require('fs');
-const path = require('path');
-
 const express = require('express');
-const PORT = process.env.PORT || 3001; 
-const app = express(); 
 
-// parse incoming string or array data   -  needs to be set up to accept POST DATA
+const PORT = process.env.PORT || 3001;
+const app = express();
+const apiRoutes = require('./routes/apiRoutes');
+const htmlRoutes = require('./routes/htmlRoutes');
+
 app.use(express.urlencoded({ extended: true }));
-// parse incoming JSON data - needs to be set up to accept POST Data
 app.use(express.json());
 app.use(express.static('public'));
 
-
-
-
-const { animals } = require('./data/animals');
-
-
-function filterByQuery(query, animalsArray) {
-  let personalityTraitsArray = [];
-  // Note that we save the animalsArray as filteredResults here:
-  let filteredResults = animalsArray;
-  if (query.personalityTraits) {
-    // Save personalityTraits as a dedicated array.
-    // If personalityTraits is a string, place it into a new array and save.
-    if (typeof query.personalityTraits === 'string') {
-      personalityTraitsArray = [query.personalityTraits];
-    } else {
-      personalityTraitsArray = query.personalityTraits;
-    }
-    // Loop through each trait in the personalityTraits array:
-    personalityTraitsArray.forEach(trait => {
-      // Check the trait against each animal in the filteredResults array.
-      // Remember, it is initially a copy of the animalsArray,
-      // but here we're updating it for each trait in the .forEach() loop.
-      // For each trait being targeted by the filter, the filteredResults
-      // array will then contain only the entries that contain the trait,
-      // so at the end we'll have an array of animals that have every one 
-      // of the traits when the .forEach() loop is finished.
-      filteredResults = filteredResults.filter(
-        animal => animal.personalityTraits.indexOf(trait) !== -1
-      );
-    });
-  }
-  if (query.diet) {
-    filteredResults = filteredResults.filter(animal => animal.diet === query.diet);
-  }
-  if (query.species) {
-    filteredResults = filteredResults.filter(animal => animal.species === query.species);
-  }
-  if (query.name) {
-    filteredResults = filteredResults.filter(animal => animal.name === query.name);
-  }
-  // return the filtered results:
-  return filteredResults;
-}
-
-function findById(id, animalsArray) {
-  const result = animalsArray.filter(animal => animal.id === id)[0];
-  return result;
-}
-
-function createNewAnimal(body, animalsArray) {
-  const animal = body;
-  animalsArray.push(animal);
-  fs.writeFileSync(
-    path.join(__dirname, './data/animals.json'),
-    JSON.stringify({ animals: animalsArray }, null, 2)
-  );
-  return animal;
-}
-
-
-
-function validateAnimal(animal) {
-  if (!animal.name || typeof animal.name !== 'string') {
-    return false;
-  }
-  if (!animal.species || typeof animal.species !== 'string') {
-    return false;
-  }
-  if (!animal.diet || typeof animal.diet !== 'string') {
-    return false;
-  }
-  if (!animal.personalityTraits || !Array.isArray(animal.personalityTraits)) {
-    return false;
-  }
-  return true;
-}
-
-
-
-app.get('/api/animals', (req, res) => {
-  let results = animals;
-  if (req.query) {
-    results = filterByQuery(req.query, results);
-  }
-  res.json(results);
-});
-app.get('/api/animals/:id', (req, res) => {
-  const result = findById(req.params.id, animals);
-  if (result) {
-    res.json(result);
-  } else {
-    res.send(404);
-  }
-});
-
-app.post('/api/animals', (req, res) => {
-  // set id based on what the next index of the array will be
-  req.body.id = animals.length.toString();
-
-  // if any data in req.body is incorrect, send 400 error back
-  if (!validateAnimal(req.body)) {
-    res.status(400).send('The animal is not properly formatted.');
-  } else {
-    const animal = createNewAnimal(req.body, animals);
-    res.json(animal);
-  }
-});
-
-
-// ('/') - this is the root route of the server which is used to create a homepage for the server
-// below has one job - to send our user the html page
-app.get('/', (req, res) => {
-  res.sendFile(path.join(__dirname, './public/index.html'));
-});
-
-app.get('/animals', (req, res) => {
-  res.sendFile(path.join(__dirname, './public/animals.html'));
-});
-
-app.get('/zookeepers', (req, res) => {
-  res.sendFile(path.join(__dirname, './public/zookeepers.html'));
-});
-
-app.get('*', (req, res) => {
-  res.sendFile(path.join(__dirname, './public/index.html'));
-});
+// Use apiRoutes
+app.use('/api', apiRoutes);
+app.use('/', htmlRoutes);
 
 app.listen(PORT, () => {
   console.log(`API server now on port ${PORT}!`);
 });
+
+
+
+
+
+
+
+// API Routes
+// =============================================================
+
+// GET /api/notes
+  // Basic route that sends the user first to the AJAX Page
+
+  app.get('/', (req, res) => {
+    // "__dirname" is a global obj and gives you the path of the currently running file
+      res.sendFile(path.join(__dirname,'public/index.html'));
+  });
+  
+  app.get('/notes', (req, res) => {
+      res.sendFile(path.join(__dirname,'public/notes.html'));
+  });
+  
+  // Read the db.json file and displays all the saved notes
+  app.get('/api/notes', (req, res) => {
+    res.sendFile(path.join(__dirname,'db/db.json'));
+  });
+  
+  // Display a single note
+  app.get("/api/notes/:note", function(req, res) {
+    var noteSelect = req.params.note;
+    console.log(noteSelect);
+    res.json(noteSelect)      
+  });
+  
+  // POST /api/notes
+  
+      app.post("/api/notes", (req, res) => {
+        // Should receive a new note to save on the request body
+        // Note: req.body hosts is equal to the JSON post sent from the user; this works because of our body parsing middleware
+        const addedNote = req.body;
+        // create a unique identifier with Date.now()
+        addedNote.id = Date.now();
+        // Add it to the db.json file, i.e. JSON database where we can send requests
+        let noteData = fs.readFileSync('./db/db.json');
+        // Create new notes - takes in JSON input and parses the data
+        let noteTaker = JSON.parse(noteData);
+        // Push addedNote to array
+        noteTaker.push(req.body);
+        // Write and stringify new array
+        fs.writeFileSync('./db/db.json',JSON.stringify(noteTaker), (err, data) => {
+          if (err) throw err;
+          res.json(noteTaker)      
+        }); 
+        // send the new added note/response back to the client
+        res.sendFile(path.join(__dirname,'public/notes.html'));
+    });
+  
+  // DELETE /api/notes
+    // DELETE /api/notes/:id - Should receive a query parameter containing the id of a note to delete. 
+  
+    app.delete("/api/notes/:id", (req, res) => {
+       // Each note is given a unique id when it's saved
+       // To delete a note, read all notes from the db.json file
+       let noteData = fs.readFileSync('./db/db.json');
+       let noteTaker = JSON.parse(noteData);
+       // const notesSaved = noteTaker.filter(note => parseInt(note.id) !== parseInt(req.params.id));
+       const notesSaved = noteTaker.find(n => n.id === parseInt(req.params.id));
+       // select and delete selected note by removing the note with the given id property
+       const notesIndex = noteTaker.indexOf(notesSaved);
+       noteTaker.splice(notesIndex);
+  
+      // rewrite the notes to the db.json file
+      fs.writeFile(__dirname + "/db/db.json", JSON.stringify(noteTaker), (err, data) => {
+        if (err) throw err;
+        //send response back to client
+        res.json(noteTaker)    
+      }); 
+    });
+  
+  
+
+
+
+
